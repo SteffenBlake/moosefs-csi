@@ -13,6 +13,8 @@
 # limitations under the License.
 
 VERSION ?= dev
+#DOCKER_REPO=quay.io/tuxera/moosefs-csi-plugin
+DOCKER_REPO=docker.io/samcv/moosefs-csi
 NAME=moosefs-csi-plugin
 
 all: ready
@@ -36,14 +38,14 @@ test:
 
 build:
 	@echo "==> Building the docker image"
-	@docker build -t quay.io/tuxera/moosefs-csi-plugin:$(VERSION) cmd/moosefs-csi-plugin
-	@docker build -t quay.io/tuxera/moosefs-csi-plugin:latest cmd/moosefs-csi-plugin
+	@docker build -t $(DOCKER_REPO):$(VERSION) cmd/moosefs-csi-plugin
+	@docker build -t $(DOCKER_REPO):latest cmd/moosefs-csi-plugin
 
 push-image:
-	@echo "==> Publishing tuxera/moosefs-csi-plugin:$(VERSION)"
-	@docker push quay.io/tuxera/moosefs-csi-plugin:$(VERSION)
-	@docker push quay.io/tuxera/moosefs-csi-plugin:latest
-	@echo "==> Your image is now available at quay.io/tuxera/moosefs-csi-plugin:$(VERSION)/latest"
+	@echo "==> Publishing $(DOCKER_REPO):$(VERSION)"
+	@docker push $(DOCKER_REPO):$(VERSION)
+	@docker push $(DOCKER_REPO):latest
+	@echo "==> Your image is now available at $(DOCKER_REPO):$(VERSION)/latest"
 
 clean:
 	@echo "==> Cleaning releases"
