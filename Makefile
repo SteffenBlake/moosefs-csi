@@ -16,19 +16,13 @@ VERSION ?= dev
 #REPO=quay.io/tuxera/moosefs-csi-plugin
 #REPO?=docker.io/samcv/moosefs-csi
 REPO?=docker.io/steffenblake/moosefs-csi-plugin
-TARGET?=build
 NAME=moosefs-csi-plugin
 
-all: $(TARGET)
+all: build
 
-build: clean cred test go-compile
+build: clean test go-compile
 
 publish: build docker-build push-image
-
-cred:
-	@echo "==> Scanning secrets in commit history (prevent accidents)"
-	# trufflehog --regex --entropy=False --rules scripts/truffleHogRegexes.json  file:///$(shell pwd)
-	trufflehog --regex --entropy=False file:///$(shell pwd)
 
 go-compile:
 	@echo "==> Building the project"
