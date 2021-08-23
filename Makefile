@@ -13,39 +13,59 @@
 # limitations under the License.
 
 VERSION ?= dev
-#DOCKER_REPO=quay.io/tuxera/moosefs-csi-plugin
-DOCKER_REPO=docker.io/samcv/moosefs-csi
+#REPO=quay.io/tuxera/moosefs-csi-plugin
+#REPO?=docker.io/samcv/moosefs-csi
+REPO?=docker.io/steffenblake/moosefs-csi-plugin
+TARGET?=build
 NAME=moosefs-csi-plugin
 
-all: ready
+all: $(TARGET)
 
-ready: clean cred test compile
+build: clean cred test go-compile
 
-publish: ready build push-image
+publish: build docker-build push-image
 
 cred:
 	@echo "==> Scanning secrets in commit history (prevent accidents)"
 	# trufflehog --regex --entropy=False --rules scripts/truffleHogRegexes.json  file:///$(shell pwd)
 	trufflehog --regex --entropy=False file:///$(shell pwd)
 
-compile:
+go-compile:
 	@echo "==> Building the project"
-	@env CGO_ENABLED=0 GOCACHE=/tmp/go-cache GOOS=linux GOARCH=amd64 go build -a -o cmd/moosefs-csi-plugin/${NAME} cmd/moosefs-csi-plugin/main.go
+	@env CGO_ENABLED=0 GOCACHE=/tmp/go-cache GOOS=linux GOARCH=amd64 go build -a -o cmd/${NAME}/${NAME}-amd64 cmd/${NAME}/main.go
+	@env CGO_ENABLED=0 GOCACHE=/tmp/go-cache GOOS=linux GOARCH=arm64 go build -a -o cmd/${NAME}/${NAME}-arm64v8 cmd/${NAME}/main.go
 
 test:
 	@echo "==> Running tests"
 	go test -v ./driver/...
 
-build:
-	@echo "==> Building the docker image"
-	@docker build -t $(DOCKER_REPO):$(VERSION) cmd/moosefs-csi-plugin
-	@docker build -t $(DOCKER_REPO):latest cmd/moosefs-csi-plugin
+docker-build:
+	@echo "==> Building the docker images"
+	@docker build -t $(DOCKER_REPO):$(VERSION)-amd64 -t $(DOCKER_REPO):latest-amd64 cmd/${NAME} --build-arg ARCH=amd64
+	@docker build -t $(DOCKER_REPO):$(VERSION)-arm64v8 -t $(DOCKER_REPO):latest-arm64v8 cmd/${NAME} --build-arg ARCH=arm64v8
+	
+	@docker manifest create \
+		$(DOCKER_REPO):$(VERSION) \
+		--amend $(DOCKER_REPO):$(VERSION)-amd64 \
+		--amend $(DOCKER_REPO):$(VERSION)-arm64v8
+
+	@docker manifest create \
+		$(DOCKER_REPO):latest \
+		--amend $(DOCKER_REPO):latest-amd64 \
+		--amend $(DOCKER_REPO):latest-arm64v8
+
 
 push-image:
-	@echo "==> Publishing $(DOCKER_REPO):$(VERSION)"
-	@docker push $(DOCKER_REPO):$(VERSION)
-	@docker push $(DOCKER_REPO):latest
-	@echo "==> Your image is now available at $(DOCKER_REPO):$(VERSION)/latest"
+	@echo "==> Publishing docker images"
+	@docker push $(DOCKER_REPO):$(VERSION)-amd64
+	@docker push $(DOCKER_REPO):latest-amd64
+	@docker push $(DOCKER_REPO):$(VERSION)-arm64v8
+	@docker push $(DOCKER_REPO):latest-arm64v8
+
+	@docker manifest push $(DOCKER_REPO):$(VERSION)
+	@docker manifest push $(DOCKER_REPO):latest
+
+	@echo "==> Your images are now available at $(DOCKER_REPO):$(VERSION)/latest"
 
 clean:
 	@echo "==> Cleaning releases"

@@ -12,7 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM ubuntu:18.04
+ARG ARCH=
+FROM ${ARCH}/ubuntu:20.04
 
 # Install wget, lsb-release and curl
 RUN apt update && \
@@ -28,6 +29,6 @@ RUN . /etc/lsb-release && echo "deb http://ppa.moosefs.com/moosefs-3/apt/ubuntu/
 RUN apt-get update && apt-get install -y moosefs-client
 
 # Copy the CSI plugin
-ADD moosefs-csi-plugin /bin/
+ADD moosefs-csi-plugin-{ARCH} /bin/moosefs-csi-plugin
 
 ENTRYPOINT ["/bin/moosefs-csi-plugin"]
