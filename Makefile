@@ -20,50 +20,25 @@ NAME=moosefs-csi-plugin
 
 all: build
 
-build: clean test go-compile
-
-publish: build docker-build push-image
-
-go-compile:
-	@echo "==> Building the project"
-	@env CGO_ENABLED=0 GOCACHE=/tmp/go-cache GOOS=linux GOARCH=amd64 go build -a -o cmd/${NAME}/${NAME}-amd64 cmd/${NAME}/main.go
-	@env CGO_ENABLED=0 GOCACHE=/tmp/go-cache GOOS=linux GOARCH=arm64 go build -a -o cmd/${NAME}/${NAME}-arm64v8 cmd/${NAME}/main.go
-
-test:
-	@echo "==> Running tests"
-	go test -v ./driver/...
-
-docker-build:
-	@echo "==> Building the docker images"
-	@docker build -t $(DOCKER_REPO):$(VERSION)-amd64 -t $(DOCKER_REPO):latest-amd64 cmd/${NAME} --build-arg ARCH=amd64
-	@docker build -t $(DOCKER_REPO):$(VERSION)-arm64v8 -t $(DOCKER_REPO):latest-arm64v8 cmd/${NAME} --build-arg ARCH=arm64v8
-	
-	@docker manifest create \
-		$(DOCKER_REPO):$(VERSION) \
-		--amend $(DOCKER_REPO):$(VERSION)-amd64 \
-		--amend $(DOCKER_REPO):$(VERSION)-arm64v8
-
-	@docker manifest create \
-		$(DOCKER_REPO):latest \
-		--amend $(DOCKER_REPO):latest-amd64 \
-		--amend $(DOCKER_REPO):latest-arm64v8
-
-
-push-image:
-	@echo "==> Publishing docker images"
-	@docker push $(DOCKER_REPO):$(VERSION)-amd64
-	@docker push $(DOCKER_REPO):latest-amd64
-	@docker push $(DOCKER_REPO):$(VERSION)-arm64v8
-	@docker push $(DOCKER_REPO):latest-arm64v8
-
-	@docker manifest push $(DOCKER_REPO):$(VERSION)
-	@docker manifest push $(DOCKER_REPO):latest
-
-	@echo "==> Your images are now available at $(DOCKER_REPO):$(VERSION)/latest"
+build: clean test compile
 
 clean:
-	@echo "==> Cleaning releases"
-	@GOOS=linux go clean -i -x ./...
+	 @echo "==> Cleaning releases"
+	 @GOOS=linux go clean -i -x ./...
+
+test:
+	 @echo "==> Running tests"
+	 @go test -v ./driver/...
+
+compile:
+	@echo "==> Building the project"
+	@env CGO_ENABLED=0 GOCACHE=/tmp/go-cache GOOS=linux GOARCH=amd64 go build -a -o cmd/${NAME}/linux/amd64/${NAME} cmd/${NAME}/main.go
+	@env CGO_ENABLED=0 GOCACHE=/tmp/go-cache GOOS=linux GOARCH=arm64 go build -a -o cmd/${NAME}/linux/arm64/${NAME} cmd/${NAME}/main.go
+
+publish:
+	@echo "==> Building the docker images"
+	@echo "==> Building Images... "
+	@docker buildx build cmd/${NAME}  --platform linux/amd64,linux/arm64 -t $(REPO):$(VERSION) -t $(REPO):latest --push
 
 .PHONY: all push fetch build-image clean
 
