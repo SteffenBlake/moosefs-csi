@@ -12,10 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM --platform=$BUILDPLATFORM ubuntu:20.04
+FROM --platform=$TARGETPLATFORM ubuntu:20.04
 
 ARG TARGETPLATFORM
-ARG BUILDPLATFORM
 
 # Install wget, lsb-release and curl
 RUN apt update && \
@@ -31,6 +30,6 @@ RUN . /etc/lsb-release && echo "deb http://ppa.moosefs.com/moosefs-3/apt/ubuntu/
 RUN apt-get update && apt-get install -y moosefs-client
 
 # Copy the CSI plugin
-ADD ${BUILDPLATFORM}/moosefs-csi-plugin /bin/moosefs-csi-plugin
+ADD /bin/${TARGETPLATFORM}/moosefs-csi-plugin /bin/moosefs-csi-plugin
 
 ENTRYPOINT ["/bin/moosefs-csi-plugin"]
