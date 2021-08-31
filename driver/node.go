@@ -77,7 +77,7 @@ func (d *CSIDriver) NodeStageVolume(ctx context.Context, req *csi.NodeStageVolum
 
 	ll.Info("mounting the volume for staging")
 
-	mounted, err := d.mounter.IsMounted(source, target)
+	mounted, err := d.mounter.IsMounted(target)
 	if err != nil {
 		return nil, err
 	}
@@ -111,8 +111,7 @@ func (d *CSIDriver) NodeUnstageVolume(ctx context.Context, req *csi.NodeUnstageV
 	})
 	ll.Info("node unstage volume called")
 
-	source := getDiskSource(req.VolumeId)
-	mounted, err := d.mounter.IsMounted(source, req.StagingTargetPath)
+	mounted, err := d.mounter.IsMounted(req.StagingTargetPath)
 	if err != nil {
 		return nil, err
 	}
@@ -183,7 +182,7 @@ func (d *CSIDriver) NodePublishVolume(ctx context.Context, req *csi.NodePublishV
 
 	// we can only check if target is mounted with the diskSource directly.
 	// The staging target path (which is a directory itself) won't work in this case
-	mounted, err := d.mounter.IsMounted(req.VolumeContext["endpoint"], target)
+	mounted, err := d.mounter.IsMounted(target)
 	if err != nil {
 		return nil, err
 	}
@@ -218,7 +217,7 @@ func (d *CSIDriver) NodeUnpublishVolume(ctx context.Context, req *csi.NodeUnpubl
 	})
 	ll.Info("node unpublish volume called")
 
-	mounted, err := d.mounter.IsMounted(req.VolumeId, req.TargetPath)
+	mounted, err := d.mounter.IsMounted(req.TargetPath)
 	if err != nil {
 		return nil, err
 	}

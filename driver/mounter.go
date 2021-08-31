@@ -37,8 +37,10 @@ type Mounter interface {
 	// Unmount a volume
 	UMount(destPath string) error
 
-	// Verify mount
-	IsMounted(sourcePath string, destPath string) (bool, error)
+	// IsMounted checks whether the target path is a correct mount (i.e:
+	// propagated). It returns true if it's mounted. An error is returned in
+	// case of system errors or if it's mounted incorrectly.
+	IsMounted(target string) (bool, error)
 }
 
 type mounter struct {
@@ -124,18 +126,14 @@ func (m *mounter) UMount(destPath string) error {
 }
 
 /*
- *	Checks if the given src and dst path are mounted
+ *	Checks if the given target path is mounted
  *
  *
  *	courtesy: https://github.com/digitalocean/csi-digitalocean/blob/master/driver/mounter.go
  */
 
-func (m *mounter) IsMounted(sourcePath, destPath string) (bool, error) {
-	if sourcePath == "" {
-		return false, errors.New("source is not specified for checking the mount")
-	}
-
-	if destPath == "" {
+ func (m *mounter) IsMounted(target string) (bool, error) {
+	if target == "" {
 		return false, errors.New("target is not specified for checking the mount")
 	}
 
@@ -148,7 +146,8 @@ func (m *mounter) IsMounted(sourcePath, destPath string) (bool, error) {
 		return false, err
 	}
 
-	findmntArgs := []string{"-o", "TARGET,PROPAGATION,FSTYPE,OPTIONS", sourcePath, "-J"}
+	findmntArgs := []string{"-o", "TARGET,PROPAGATION,FSTYPE,OPTIONS", "-M", target, "-J"}
+
 	out, err := exec.Command(findmntCmd, findmntArgs...).CombinedOutput()
 	if err != nil {
 		// findmnt exits with non zero exit status if it couldn't find anything
@@ -158,6 +157,11 @@ func (m *mounter) IsMounted(sourcePath, destPath string) (bool, error) {
 
 		return false, fmt.Errorf("checking mounted failed: %v cmd: %q output: %q",
 			err, findmntCmd, string(out))
+	}
+
+	// no response means there is no mount
+	if string(out) == "" {
+		return false, nil
 	}
 
 	var resp *findmntResponse
@@ -170,11 +174,11 @@ func (m *mounter) IsMounted(sourcePath, destPath string) (bool, error) {
 	for _, fs := range resp.FileSystems {
 		// check if the mount is propagated correctly. It should be set to shared.
 		if fs.Propagation != "shared" {
-			return true, fmt.Errorf("mount propagation for target %q is not enabled or the block device %q does not exist anymore", destPath, sourcePath)
+			return true, fmt.Errorf("mount propagation for target %q is not enabled", target)
 		}
 
 		// the mountpoint should match as well
-		if fs.Target == destPath {
+		if fs.Target == target {
 			targetFound = true
 		}
 	}
