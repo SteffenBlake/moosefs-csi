@@ -1,5 +1,6 @@
 $REPO = "steffenblake/moosefs-csi-plugin"
-$VER = "0.0.9"
+$VER = "1.0.1"
+$VERBOSE = $true
 
 $OSLIST = "linux"
 $ARCHLIST = @{
@@ -17,15 +18,18 @@ $ManifestLatest = $Repo + ":latest"
 $ManifestVer = $Repo + ":" + $VER
 
 Write-Output "Composing Go Environment..."
-Set-Variable CGO_ENABLED=0
-Set-Variable GOCACHE=/tmp/go-cache
+$Env:CGO_ENABLED=0
 
 ForEach ($OS in $OSLIST) {
-    Set-Variable GOOS=$OS
+    $Env:GOOS=$OS
     ForEach ($ARCH in $ARCHLIST.keys) {
-        Set-Variable GOARCH=$ARCH
+        $Env:GOARCH=$ARCH
         $CompilePath = "./cmd/moosefs-csi-plugin/bin/$OS/" + $ARCHLIST[$Arch] + "/moosefs-csi-plugin"
         Write-Output "Compiling $OS/$ARCH >>> $CompilePath"
+        if ($VERBOSE) {
+            Write-Output "Sanity Check Go Env..."
+            Write-Output (go env)
+        }
         go build -a -o $CompilePath ./cmd/moosefs-csi-plugin/main.go
 
         $ArchRepo = $Repo + ":" + $OS + "-" + $ARCH

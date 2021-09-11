@@ -25,7 +25,7 @@ import (
 
 func main() {
 	var (
-		endpoint = flag.String("endpoint", "unix:///var/lib/kubelet/plugins/com.tuxera.csi.moosefs/csi.sock", "CSI endpoint")
+		endpoint = flag.String("endpoint", "unix:///var/lib/kubelet/plugins/moosefs-csi-driver/csi.sock", "CSI endpoint")
 		topo     = flag.String("topology", "master:AWS,chunk:AWS", "MooseFS cluster topology, e.g. For AWS, master:AWS,chunk:AWS. For exiting cluster master:ep,chunk=ep")
 		// AWS
 		awsAccessKeyID  = flag.String("aws-access", "", "AWS Access key Id")

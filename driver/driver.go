@@ -30,7 +30,7 @@ import (
 )
 
 const (
-	driverName   = "com.tuxera.csi.moosefs"
+	driverName   = "moosefs-csi-driver"
 	version      = "dev"
 	gitTreeState = "not a git tree"
 	commit       = ""
